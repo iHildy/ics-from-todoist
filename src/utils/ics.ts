@@ -11,7 +11,8 @@ export function createICSEvent(
   summary: string,
   startDate: string,
   uid: string,
-  description: string
+  description: string,
+  taskId?: string
 ): string {
   // Calculate end date (next day for all-day events)
   const dtStart = startDate;
@@ -24,12 +25,19 @@ export function createICSEvent(
     .split("T")[0]
     .replace(/-/g, "");
 
+  // Create task URL if taskId is provided
+  const taskUrl = taskId
+    ? `https://app.todoist.com/app/task/${taskId}`
+    : undefined;
+
   return `BEGIN:VEVENT
 UID:${uid}
 SUMMARY:${summary}
-DESCRIPTION:${description}
+DESCRIPTION:${description}${taskUrl ? `\\n\\nView task: ${taskUrl}` : ""}
 DTSTART;VALUE=DATE:${dtStart}
 DTEND;VALUE=DATE:${dtEnd}
-DTSTAMP:${startDate}
+DTSTAMP:${startDate}${taskUrl ? `\nURL:${taskUrl}` : ""}${
+    taskUrl ? `\nLOCATION:${taskUrl}` : ""
+  }
 END:VEVENT\n`;
 }
