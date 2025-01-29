@@ -2,7 +2,7 @@ import express from "express";
 import { TodoistApi } from "@doist/todoist-api-typescript";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
-import { formatDateToICS, createICSEvent } from "../main.js";
+import { formatDateToICS, createICSEvent } from "./utils/ics.js";
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
