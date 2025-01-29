@@ -1,0 +1,30 @@
+{
+  "name": "todoist-calendar-sync",
+  "version": "1.0.0",
+  "description": "Generate an ics file from a todoist project export using deadlines as the date.",
+  "main": "dist/server.js",
+  "author": "iHildy",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev src/server.ts",
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "dependencies": {
+    "@doist/todoist-api-typescript": "^2.1.2",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "papaparse": "^5.4.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/node": "^18.15.11",
+    "@types/papaparse": "^5.3.14",
+    "@types/uuid": "^9.0.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.4"
+  }
+}
