@@ -27,10 +27,9 @@ async function generateCalendarContent(projectId) {
         console.log(`[Calendar Generation] Fetching project details...`);
         const project = await api.getProject(projectId);
         console.log(`[Calendar Generation] Project name: ${project.name}`);
-        // Fetch sections and filter by projectId
-        const allSections = await api.getSections();
-        const sections = allSections.filter((sec) => sec.projectId === projectId);
-        console.log(`[Calendar Generation] Found ${sections.length} sections for project ${projectId}`);
+        // Fetch sections for the project using the canonical project id
+        const sections = await api.getSections(project.id);
+        console.log(`[Calendar Generation] Found ${sections.length} sections for project ${project.id}`);
         const events = [];
         // Process each task
         console.log(`[Calendar Generation] Processing tasks...`);
