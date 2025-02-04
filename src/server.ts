@@ -44,13 +44,10 @@ async function generateCalendarContent(projectId: string): Promise<string> {
     const project = await api.getProject(projectId);
     console.log(`[Calendar Generation] Project name: ${project.name}`);
 
-    // Fetch sections and filter by projectId
-    const allSections = await api.getSections();
-    const sections = allSections.filter(
-      (sec: any) => sec.projectId === projectId
-    );
+    // Fetch sections for the project using the canonical project id
+    const sections = await api.getSections(project.id);
     console.log(
-      `[Calendar Generation] Found ${sections.length} sections for project ${projectId}`
+      `[Calendar Generation] Found ${sections.length} sections for project ${project.id}`
     );
 
     const events: string[] = [];
