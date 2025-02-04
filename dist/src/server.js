@@ -27,21 +27,40 @@ async function generateCalendarContent(projectId) {
         console.log(`[Calendar Generation] Fetching project details...`);
         const project = await api.getProject(projectId);
         console.log(`[Calendar Generation] Project name: ${project.name}`);
+        // Fetch sections and filter by projectId
+        const allSections = await api.getSections();
+        const sections = allSections.filter((sec) => sec.projectId === projectId);
+        console.log(`[Calendar Generation] Found ${sections.length} sections for project ${projectId}`);
         const events = [];
         // Process each task
         console.log(`[Calendar Generation] Processing tasks...`);
         for (const task of tasks) {
-            if (task.due?.date) {
-                console.log(`[Calendar Generation] Processing task: "${task.content}" due ${task.due.date}`);
-                const startDate = formatDateToICS(task.due.date);
+            const deadlineDate = task.deadline?.date;
+            const dueDate = task.due?.date;
+            const dateStr = deadlineDate ? deadlineDate : dueDate;
+            if (dateStr) {
+                let summary = task.content;
+                // Use section name if available
+                if (task.sectionId) {
+                    const section = sections.find((sec) => sec.id === task.sectionId);
+                    if (section) {
+                        summary = `${task.content} | ${section.name}`;
+                    }
+                }
+                const eventDate = formatDateToICS(dateStr);
                 const uid = uuidv4();
                 const description = task.description || "No description provided";
-                const event = createICSEvent(`${task.content} | ${project.name}`, startDate, uid, description, task.id);
+                const event = createICSEvent(summary, eventDate, uid, description, task.id);
                 events.push(event);
-                console.log(`[Calendar Generation] Added event for task: ${task.content} (ID: ${task.id})`);
+                if (deadlineDate) {
+                    console.log(`[Calendar Generation] Added event for task: ${task.content} (ID: ${task.id}) with deadline ${deadlineDate}`);
+                }
+                else {
+                    console.log(`[Calendar Generation] Added event for task: ${task.content} (ID: ${task.id}) using due date ${dueDate}`);
+                }
             }
             else {
-                console.log(`[Calendar Generation] Skipping task without due date: ${task.content}`);
+                console.log(`[Calendar Generation] Skipping task without any date: ${task.content}`);
             }
         }
         console.log(`[Calendar Generation] Generated ${events.length} calendar events`);
@@ -110,7 +129,14 @@ app.get("/:projectName-:projectId", (req, res) => {
 });
 // Endpoint to get calendar for a specific project
 app.get("/calendar/:projectId", async (req, res) => {
-    const { projectId } = req.params;
+    let { projectId } = req.params;
+    // If projectId is in old format (contains hyphen), extract the correct project id
+    if (projectId.includes("-")) {
+        const parts = projectId.split("-");
+        const extractedProjectId = parts[parts.length - 1];
+        console.log(`[Extraction] Detected projectId in old format, using extracted project ID: ${extractedProjectId}`);
+        projectId = extractedProjectId;
+    }
     console.log(`[Request] Received calendar request for project ${projectId}`);
     try {
         // Check cache
@@ -158,6 +184,12 @@ app.get("/calendar/:projectId", async (req, res) => {
 app.post("/webhook", async (req, res) => {
     console.log("[Webhook] Received Todoist webhook");
     const { project_id } = req.body;
+    const receivedToken = req.headers["x-todoist-verification-token"];
+    // Verify the token
+    if (receivedToken !== process.env.TODOIST_VERIFICATION_TOKEN) {
+        console.error("[Webhook] Verification token mismatch");
+        return res.status(403).send("Forbidden: Invalid verification token");
+    }
     if (project_id) {
         console.log(`[Webhook] Processing update for project ${project_id}`);
         if (calendarCache[project_id]) {

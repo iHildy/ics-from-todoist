@@ -36,8 +36,6 @@ SUMMARY:${summary}
 DESCRIPTION:${description}${taskUrl ? `\\n\\nView task: ${taskUrl}` : ""}
 DTSTART;VALUE=DATE:${dtStart}
 DTEND;VALUE=DATE:${dtEnd}
-DTSTAMP:${startDate}${taskUrl ? `\nURL:${taskUrl}` : ""}${
-    taskUrl ? `\nLOCATION:${taskUrl}` : ""
-  }
+DTSTAMP:${startDate}
 END:VEVENT\n`;
 }
