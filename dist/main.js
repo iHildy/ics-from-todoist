@@ -4,12 +4,20 @@ import path from "path";
 import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
 import readline from "readline";
+import cliProgress from "cli-progress";
 import { formatDateToICS, createICSEvent } from "./src/utils/ics.js";
 // Main function to process the CSV and generate the ICS file
 export function generateICSFromCSV(csvFilePath, outputDirectory, filter) {
     const events = [];
     let sectionContent = null;
     let rlClosed = false;
+    // Create progress bar
+    const progressBar = new cliProgress.SingleBar({
+        format: 'Converting tasks |{bar}| {percentage}% | {value}/{total} tasks | ETA: {eta}s',
+        barCompleteChar: '█',
+        barIncompleteChar: '░',
+        hideCursor: true
+    });
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
@@ -26,6 +34,8 @@ export function generateICSFromCSV(csvFilePath, outputDirectory, filter) {
         skipEmptyLines: true,
         complete: (results) => {
             const processEvents = async () => {
+                // Count total tasks with deadlines first
+                const totalTasks = results.data.filter((row) => row.DEADLINE).length;
                 // If no section is found, prompt for it (only if stdin is interactive)
                 if (!sectionContent) {
                     if (process.stdin.isTTY) {
@@ -48,6 +58,11 @@ export function generateICSFromCSV(csvFilePath, outputDirectory, filter) {
                     console.log(`Filtering tasks matching: "${filter}"`);
                 }
                 const outputFilePath = path.resolve(outputDirectory, `${sanitizedSectionName}.ics`);
+                // Start progress bar
+                if (totalTasks > 0) {
+                    progressBar.start(totalTasks, 0);
+                }
+                let processedCount = 0;
                 results.data.forEach((row) => {
                     if (row.TYPE === "section") {
                         sectionContent = row.CONTENT;
@@ -57,6 +72,8 @@ export function generateICSFromCSV(csvFilePath, outputDirectory, filter) {
                         const eventName = row.CONTENT;
                         // Apply filter if provided
                         if (filter && !eventName.toLowerCase().includes(filter.toLowerCase())) {
+                            processedCount++;
+                            progressBar.update(processedCount);
                             return;
                         }
                         const startDate = formatDateToICS(row.DEADLINE);
@@ -64,8 +81,12 @@ export function generateICSFromCSV(csvFilePath, outputDirectory, filter) {
                         const eventDescription = row.DESCRIPTION || "No description provided";
                         const event = createICSEvent(`${eventName} | ${sectionContent || "Unknown Section"}`, startDate, uid, eventDescription);
                         events.push(event);
+                        processedCount++;
+                        progressBar.update(processedCount);
                     }
                 });
+                // Stop progress bar
+                progressBar.stop();
                 // Write the ICS file
                 const icsContent = [
                     "BEGIN:VCALENDAR",
